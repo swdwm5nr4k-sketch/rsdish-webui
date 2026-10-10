@@ -54,7 +54,7 @@ pub fn build_cabinet_from_path(cab_abs_path: &Path) -> Result<Cabinet, CabinetEr
 
 #[cfg(test)]
 mod tests {
-    use crate::phy::cab_conf::default_cabinet_config;
+    use crate::phy::cab_conf::{default_cabinet_config, default_membership};
 
     use super::*;
     use std::fs;
@@ -67,7 +67,9 @@ mod tests {
         let tmp_dir = tempdir().unwrap();
         let tmp_path = tmp_dir.path();
 
-        let test_config = default_cabinet_config();
+        // a cabinet config is only meaningful with a membership in it
+        let mut test_config = default_cabinet_config();
+        test_config.memberships.push(default_membership());
 
         let toml_str = toml::to_string(&test_config).unwrap();
         let cab_file_path = tmp_path.join(CABINET_CONFIG_NAME);

@@ -18,6 +18,7 @@ A multi-functional sync tool for domestic storages.
 - 🛡️ Designed for home drives that may go offline;
 - 🔗 Unify scattered data across multiple storage devices via symbolic links;
 - 🖥️ Supports Linux, Windows, and macOS;
+- 🌐 Optional local web UI — scan, sync and edit cabinets from a browser;
 
 ## Installation
 
@@ -25,6 +26,37 @@ Add `rsdish` to `PATH`;
 
 ## How it works
 [<img src="assets/how_it_works.png" width="40%" alt="How_it_works">](#)
+
+## Web UI
+
+The same library also ships a local web UI, so scanning, group actions and
+cabinet editing can be done from a browser:
+
+```bash
+rsdish web                        # http://127.0.0.1:8787
+rsdish web --port 9000 --open     # pick a port and open the browser
+
+# or use the standalone binary
+rsdish-webui --host 127.0.0.1 --port 9000
+```
+
+The frontend is compiled into the binary: no node, no build step, nothing else
+to install next to it.
+
+| Tab | What it does |
+| --- | --- |
+| Dashboard | every scanned storage with its cabinets and memberships, plus scan issues |
+| Groups | members of each group, with preview / sync / link / clean / exec |
+| Cabinets | init a config, join groups, edit memberships, apply the main/mirror/gate presets |
+| Settings | the config file path and the custom storages list |
+| Logs | live view of the same events the CLI logs |
+
+Destructive actions show a read-only preview first: what would be copied, linked
+or removed, per member, before anything touches the disk. The preview is computed
+by the very same functions the CLI uses, so both stay in sync.
+
+The server binds to `127.0.0.1` by default and has no authentication: keep it on
+loopback, or put a reverse proxy in front of it if you expose it.
 
 ## Configuration
 

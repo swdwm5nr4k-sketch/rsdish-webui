@@ -1,13 +1,5 @@
-use std::path::PathBuf;
-
 use clap::{Args, Subcommand};
-use rsdish::{
-    phy::{
-        dk::disks,
-        stg::{Storage, build_storages_from_paths},
-    },
-    user::user_conf::user_conf,
-};
+use rsdish::phy::stg::{Storage, scan_storages};
 
 #[derive(Debug, Args)]
 #[command(about = "Info of storages.")]
@@ -35,14 +27,8 @@ pub fn handle_storage(cmd: StorageCmd) {
 }
 
 pub fn storages() -> Vec<Storage> {
-    let dks = disks();
-    let custom_stg_paths = user_conf().custom_storages;
-
-    let mut stg_paths = dks;
-    stg_paths.extend(custom_stg_paths.iter().map(|s| PathBuf::from(s)));
-
-    let stgs = build_storages_from_paths(&stg_paths.iter().map(|s| s.as_path()).collect());
-    stgs
+    // every mounted disk plus the custom storages from the user config
+    scan_storages().0
 }
 
 pub fn handle_storage_list(args: StorageListArgs) {

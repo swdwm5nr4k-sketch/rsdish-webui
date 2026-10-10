@@ -1,17 +1,21 @@
 mod cmd;
 
 use clap::Parser;
-use cmd::root::RootCmd;
-use tracing_subscriber::FmtSubscriber;
-
-use crate::cmd::root::handle_root;
+use cmd::root::{RootCmd, handle_root};
+use rsdish::web::logs::WebLogLayer;
+use tracing_subscriber::layer::SubscriberExt;
+use tracing_subscriber::util::SubscriberInitExt;
 
 fn main() {
-    let subscriber = FmtSubscriber::builder()
-        .with_max_level(tracing::Level::INFO)
-        .finish();
+    let fmt_layer = tracing_subscriber::fmt::layer();
 
-    tracing::subscriber::set_global_default(subscriber).expect("Failed to set global subscriber");
+    // The web layer keeps a bounded in-memory copy of every event so the web UI
+    // can show them. It costs nothing when no web UI is running.
+    tracing_subscriber::registry()
+        .with(tracing_subscriber::filter::LevelFilter::INFO)
+        .with(fmt_layer)
+        .with(WebLogLayer::new())
+        .init();
 
     let cli = RootCmd::parse();
     println!("{:#?}", cli);

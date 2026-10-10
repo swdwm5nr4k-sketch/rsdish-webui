@@ -8,28 +8,35 @@ use crate::{
     logi::{
         gp::Group,
         mem::Member,
+        report::{ActionReport, MemberReport},
         vmem::{VirtualLeaf, VirtualMember},
     },
     phy::cab_conf::SaveLevel,
 };
 
 impl Group {
-    pub fn link_from_vmem(&self, vmem: &VirtualMember) {
+    pub fn link_from_vmem(&self, vmem: &VirtualMember) -> ActionReport {
         let link_dsts = self
             .mems
             .iter()
             .filter(|mem| mem.mem_info.mem_conf.link_option.enable);
+
+        let mut report = ActionReport::default();
         link_dsts.for_each(|link_dst| {
             info!("linking dst {:?}", link_dst.mem_info.cab_info.abs_path);
-            link_dst.link_from_vmem(vmem);
+            report.members.push(link_dst.link_from_vmem(vmem));
         });
+        report
     }
 }
 
 impl Member {
-    fn link_from_vmem(&self, vmem: &VirtualMember) {
+    /// Files this member would receive as symlinks from the virtual member.
+    /// Read-only: the web UI uses it to preview an action before running it.
+    pub fn plan_link_from_vmem<'a>(&self, vmem: &'a VirtualMember) -> Vec<&'a VirtualLeaf> {
         let link_dst_root = self.mem_info.cab_info.abs_path.as_path();
         let priority = self.mem_info.mem_conf.priority;
+        let mut plan: Vec<&VirtualLeaf> = Vec::new();
 
         for leaf in vmem.virtual_tree.values() {
             let target_abs_path = link_dst_root.join(leaf.file_rel_path.as_path());
@@ -42,57 +49,86 @@ impl Member {
                         continue;
                     }
                     match SaveLevel::from(self.mem_info.mem_conf.link_option.save_level) {
-                        SaveLevel::DontSave => self.link_from_leaf(leaf, false),
+                        SaveLevel::DontSave => (),
                         SaveLevel::SaveHigher => {
-                            self.link_from_leaf(leaf, priority < leaf.priority)
+                            if priority < leaf.priority {
+                                plan.push(leaf);
+                            }
                         }
                         SaveLevel::SaveHigherEqual => {
-                            self.link_from_leaf(leaf, priority <= leaf.priority)
+                            if priority <= leaf.priority {
+                                plan.push(leaf);
+                            }
                         }
-                        SaveLevel::SaveAll => self.link_from_leaf(leaf, true),
+                        SaveLevel::SaveAll => plan.push(leaf),
                         _ => (),
                     }
                 }
             };
         }
+
+        plan
     }
 
-    fn link_from_leaf(&self, leaf: &VirtualLeaf, condition: bool) {
-        if !condition {
-            return;
+    pub fn link_from_vmem(&self, vmem: &VirtualMember) -> MemberReport {
+        let plan = self.plan_link_from_vmem(vmem);
+
+        let mut report = MemberReport {
+            cabinet_abs_path: self.mem_info.cab_info.abs_path.clone(),
+            planned: plan.len(),
+            ..Default::default()
+        };
+
+        for leaf in plan {
+            match self.link_from_leaf(leaf) {
+                Ok(_) => report.done += 1,
+                Err(e) => {
+                    error!(
+                        "Failed to link from original {} to link {}: {}",
+                        leaf.file_abs_path.display(),
+                        self.mem_info
+                            .cab_info
+                            .abs_path
+                            .join(&leaf.file_rel_path)
+                            .display(),
+                        e
+                    );
+                    report.failures.push(format!(
+                        "{}: {}",
+                        leaf.file_abs_path.display(),
+                        e
+                    ));
+                }
+            }
         }
 
+        report
+    }
+
+    fn link_from_leaf(&self, leaf: &VirtualLeaf) -> io::Result<()> {
         let link_dst_root = &self.mem_info.cab_info.abs_path;
         let target_abs_path = link_dst_root.join(&leaf.file_rel_path);
 
         let target_folder = match target_abs_path.parent() {
             Some(p) => p,
             None => {
-                error!("Failed to get parent of {:?}", target_abs_path);
-                return;
+                return Err(io::Error::new(
+                    io::ErrorKind::InvalidInput,
+                    format!("Failed to get parent of {:?}", target_abs_path),
+                ));
             }
         };
-        
-        match fs::create_dir_all(target_folder) {
-            Ok(_) => (),
-            Err(e) => {
-                error!("Failed to create target folder {:?}: {}", target_folder, e);
-                return;
-            },
-        }
 
-        match create_symlink(leaf.file_abs_path.as_path(), target_abs_path.as_path()) {
-            Ok(_) => (),
-            Err(e) => {
-                error!(
-                    "Failed to link from original {} to link {}: {}",
-                    leaf.file_abs_path.display(),
-                    target_abs_path.display(),
-                    e
-                );
-                return;
-            }
-        }
+        fs::create_dir_all(target_folder)?;
+
+        create_symlink(leaf.file_abs_path.as_path(), target_abs_path.as_path())?;
+
+        info!(
+            "Linked file {:?} to {:?}",
+            leaf.file_abs_path, target_abs_path
+        );
+
+        Ok(())
     }
 }
 

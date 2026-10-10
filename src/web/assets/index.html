@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>rsdish webui</title>
+    <link rel="icon" href="/assets/logo.png" />
+    <link rel="stylesheet" href="/assets/style.css" />
+  </head>
+  <body>
+    <header class="topbar">
+      <div class="brand">
+        <img src="/assets/logo.png" alt="rsdish" class="logo" />
+        <div>
+          <h1>rsdish <span class="tag">webui</span></h1>
+          <p class="muted small" id="version">loading...</p>
+        </div>
+      </div>
+      <div class="topbar-actions">
+        <span class="pill mono" id="config-path" title="config file">config: -</span>
+        <button class="btn" id="refresh-btn" title="Rescan storages and groups">Rescan</button>
+      </div>
+    </header>
+
+    <nav class="tabs" id="tabs">
+      <button class="tab active" data-tab="dashboard">Dashboard</button>
+      <button class="tab" data-tab="groups">Groups</button>
+      <button class="tab" data-tab="cabinets">Cabinets</button>
+      <button class="tab" data-tab="settings">Settings</button>
+      <button class="tab" data-tab="logs">Logs</button>
+    </nav>
+
+    <main>
+      <section class="panel active" id="panel-dashboard"></section>
+      <section class="panel" id="panel-groups"></section>
+      <section class="panel" id="panel-cabinets"></section>
+      <section class="panel" id="panel-settings"></section>
+      <section class="panel" id="panel-logs"></section>
+    </main>
+
+    <div id="modal-root"></div>
+    <div id="toasts" class="toasts"></div>
+    <script src="/assets/app.js"></script>
+  </body>
+</html>

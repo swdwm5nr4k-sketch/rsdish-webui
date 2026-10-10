@@ -189,5 +189,23 @@ pub fn handle_group_exec(args: GroupExecArgs) {
     let select_gps: Vec<&Group> = select_groups(&gp_map, args.all, &args.group_uuids);
     let script = read_input(&args.input).unwrap();
 
-    select_gps.iter().for_each(|g| g.exec(&script));
+    select_gps.iter().for_each(|g| {
+        for outcome in g.exec(&script) {
+            if !outcome.stdout.is_empty() {
+                print!("{}", outcome.stdout);
+            }
+            if !outcome.stderr.is_empty() {
+                eprint!("{}", outcome.stderr);
+            }
+            if let Some(error) = &outcome.error {
+                eprintln!("Failed to run script in {:?}: {}", outcome.cabinet_abs_path, error);
+            }
+            if !outcome.success {
+                eprintln!(
+                    "Script failed in {:?} with exit code {:?}",
+                    outcome.cabinet_abs_path, outcome.code
+                );
+            }
+        }
+    });
 }

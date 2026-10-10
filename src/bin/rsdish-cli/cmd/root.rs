@@ -10,6 +10,7 @@ use crate::cmd::config::{ConfigCmd, handle_config};
 use crate::cmd::group::{GroupCmd, handle_group};
 use crate::cmd::preset::{PresetCmd, handle_preset};
 use crate::cmd::storage::{StorageCmd, handle_storage};
+use crate::cmd::web::{WebCmd, handle_web};
 
 // Configures Clap v3-style help menu colors
 const STYLES: Styles = Styles::styled()
@@ -37,6 +38,7 @@ pub enum SubcommandEnum {
     Group(GroupCmd),
     Config(ConfigCmd),
     Preset(PresetCmd),
+    Web(WebCmd),
 }
 
 pub fn handle_root(cmd: RootCmd) {
@@ -46,5 +48,6 @@ pub fn handle_root(cmd: RootCmd) {
         SubcommandEnum::Group(child) => handle_group(child),
         SubcommandEnum::Config(child) => handle_config(child),
         SubcommandEnum::Preset(child) => handle_preset(child),
+        SubcommandEnum::Web(child) => handle_web(child),
     }
 }

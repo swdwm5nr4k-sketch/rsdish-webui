@@ -17,7 +17,7 @@ pub struct GroupInfo {
     pub gp_uuid: String,
 }
 
-pub fn build_group_map_from_storages(stgs: &Vec<Storage>) -> BTreeMap<String, Group> {
+pub fn build_group_map_from_storages(stgs: &[Storage]) -> BTreeMap<String, Group> {
     let mut gp_map: BTreeMap<String, Group> = BTreeMap::new();
 
     for stg in stgs {
